@@ -6,6 +6,7 @@ import { sign } from "jsonwebtoken";
 
 export async function signup(req:Request,res:Response){
     const {email,password} = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
     try{
         const existingUser = await findUserByEmail(email);
         if(existingUser){
@@ -27,6 +28,7 @@ export async function signup(req:Request,res:Response){
 
 export async function signin(req:Request,res:Response){
     const{email,password} = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
     try{
         const user = await validateUser(email,password);
         if(!user){

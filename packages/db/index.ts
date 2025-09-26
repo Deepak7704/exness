@@ -7,4 +7,3 @@ const client = new Client({
     database:"postgres"
 })
 export default client;
-

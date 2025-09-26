@@ -42,7 +42,7 @@ async function addTrade(){
         try{
             await client.query(query, values);
             processCount += tradeBuffer.length;
-            console.log(`✅ Inserted ${tradeBuffer.length} trades in batch (Total: ${processCount})`);
+            console.log(`Inserted ${tradeBuffer.length} trades in batch (Total: ${processCount})`);
         }catch(err){
             console.error(err);
             for(const trade of tradeBuffer){
