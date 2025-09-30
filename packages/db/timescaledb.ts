@@ -1,12 +1,14 @@
-import client from "./index";
+import connectDB from "./index";
 // mutlipliers for converting decimal values into integer values
 const priceMultiplier = 1e8;
 const qtyMultiplier = 1e6;
 
 async function connection(){
     try{
+
         console.log("Starting database connection...");
-        await client.connect(); // connects the tdb client that is generated using pg
+        const client = await connectDB(); 
+        // connects the tdb client that is generated using pg
         console.log("Database connected successfully");
 
         //create the main trades table
@@ -75,8 +77,6 @@ async function connection(){
     }catch(err){
         console.log("Database setup error occured",err);
         throw err;
-    }finally{
-        await client.end();
     }
 }
 

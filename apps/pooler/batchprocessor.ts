@@ -1,5 +1,5 @@
 import { consumer } from "@repo/redis";
-import client from "@repo/db/index"
+import connectDB from "@repo/db/index"
 import type { BinanceTradeData } from "./types/index";
 
 
@@ -13,7 +13,7 @@ const TIMEOUT = 5000; // time out is used to define that only for this much amou
 let flushtimeout : NodeJS.Timeout | null = null;
 let tradeBuffer : BinanceTradeData[] = []; // an empty array that is declared to track the amount of responses coming if the tradebuffer length is equal to or greater than batch size they are stored into the database
 let processCount = 0;
-
+const client = await connectDB();
 async function addTrade(){
     try{
         if(tradeBuffer.length === 0){
@@ -38,7 +38,6 @@ async function addTrade(){
         });
         const query = `INSERT INTO trades(time, symbol, price, quantity, trade_id)
                       VALUES ${placeholder.join(",")}`;
-
         try{
             await client.query(query, values);
             processCount += tradeBuffer.length;
@@ -115,8 +114,6 @@ async function consumeTrade(){
 }
 (async () => {
     try {
-        await client.connect();
-        console.log("Connected to Database");
         await consumeTrade();
         
     } catch (error) {
