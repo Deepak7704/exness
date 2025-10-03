@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
-import { Symbol, Interval, BackendCandleData } from "@/types/candle";
+import { Symbol, Interval, BackendCandleData } from "../types/candles";
 
 interface CandleData {
   time: UTCTimestamp;

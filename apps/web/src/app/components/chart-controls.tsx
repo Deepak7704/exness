@@ -1,4 +1,4 @@
-import { Symbol, Interval } from "@/types/candle";
+import { Symbol,Interval } from "../types/candles";
 
 interface ChartControlsProps {
   symbol: Symbol;
@@ -57,7 +57,7 @@ export function ChartControls({ symbol, interval, setSymbol, setInterval, isLoad
           <button
             onClick={() => setInterval("1m")}
             className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
-              interval === "1m" ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+              interval === "1m" ? "bg-blue-600 text-black" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
             }`}
           >
             1m

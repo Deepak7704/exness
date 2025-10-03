@@ -1,4 +1,4 @@
-import { OHLCDisplay as OHLCDisplayType } from "@/types/candle";
+import { OHLCDisplay as OHLCDisplayType } from "../types/candles";
 
 interface OHLCDisplayProps {
   data: OHLCDisplayType;

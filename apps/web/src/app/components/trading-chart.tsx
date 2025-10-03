@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import { Symbol, Interval, OHLCDisplay as OHLCDisplayType } from "@/types/candle";
-import { useTradingChart } from "@/components/use-trading-chart";
-import { ChartControls } from "@/components/chart-controls";
-import { OHLCDisplay } from "@/components/ohlc-display";
+import { Symbol, Interval, OHLCDisplay as OHLCDisplayType } from "../types/candles";
+import { useTradingChart } from "./use-trading-charts";
+import { ChartControls } from "./chart-controls";
+import { OHLCDisplay } from "./ohlc-display";
 
 interface LiveCandle {
   symbol: string;
@@ -22,7 +22,7 @@ interface LiveCandle {
 }
 
 export default function TradingChart() {
-  const [symbol, setSymbol] = useState<Symbol>("SOLUSDT");
+  const [symbol, setSymbol] = useState<Symbol>("BTCUSDT");
   const [interval, setInterval] = useState<Interval>("1m");
   const { 
     chartContainerRef, 
@@ -44,7 +44,6 @@ export default function TradingChart() {
   const socketRef = useRef<Socket | null>(null);
   const previousCandleRef = useRef<LiveCandle | null>(null);
 
-  // Socket.IO connection and live candle handling
   useEffect(() => {
     const socket = io("http://localhost:4000");
     socketRef.current = socket;
@@ -122,17 +121,20 @@ export default function TradingChart() {
   };
 
   return (
-    <div className="w-full bg-[#0A0E1A] border border-gray-800 rounded-lg">
-      <ChartControls
-        symbol={symbol}
-        interval={interval}
-        setSymbol={setSymbol}
-        setInterval={setInterval}
-        isLoading={isLoading}
-        onRefresh={handleRefresh}
-      />
-      <OHLCDisplay data={ohlcData} />
-      <div ref={chartContainerRef} className="w-full" />
+    <div className="flex flex-col h-full bg-[#101421]">
+      <div className="border-b border-gray-800">
+        <ChartControls
+          symbol={symbol}
+          interval={interval}
+          setSymbol={setSymbol}
+          setInterval={setInterval}
+          isLoading={isLoading}
+          onRefresh={handleRefresh}
+        />
+        <OHLCDisplay data={ohlcData} />
+      </div>
+      
+      <div ref={chartContainerRef} className="flex-1 w-full" />
     </div>
   );
 }
