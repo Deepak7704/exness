@@ -70,7 +70,7 @@ export async function getBalance(req:AuthRequest,res:Response){
     res.json({
         user:{
             email:user.email,
-            balance:user.balance
+            balance:user.balance.toNumber()
         }
     })
 }

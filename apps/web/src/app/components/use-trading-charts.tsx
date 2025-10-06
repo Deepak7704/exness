@@ -42,9 +42,12 @@ export function useTradingChart(symbol: Symbol, interval: Interval) {
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
+    const containerHeight = chartContainerRef.current.clientHeight;
+    const containerWidth = chartContainerRef.current.clientWidth;
+
     const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
-      height: 500,
+      width: containerWidth,
+      height: containerHeight,
       layout: {
         background: { color: "#0A0E1A" },
         textColor: "#D9D9D9",
@@ -54,11 +57,19 @@ export function useTradingChart(symbol: Symbol, interval: Interval) {
         horzLines: { color: "#1E293B" },
       },
       crosshair: { mode: 1 },
-      rightPriceScale: { borderColor: "#2B3B5F" },
+      rightPriceScale: { 
+        borderColor: "#2B3B5F",
+        visible: true,
+      },
       timeScale: { 
         borderColor: "#2B3B5F", 
         timeVisible: true, 
-        secondsVisible: false 
+        secondsVisible: false,
+        visible: true,
+        borderVisible: true,
+        rightOffset: 10,
+        barSpacing: 12,
+        minBarSpacing: 6,
       },
     });
 
@@ -76,13 +87,21 @@ export function useTradingChart(symbol: Symbol, interval: Interval) {
 
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
+        const newWidth = chartContainerRef.current.clientWidth;
+        const newHeight = chartContainerRef.current.clientHeight;
+        
         chartRef.current.applyOptions({ 
-          width: chartContainerRef.current.clientWidth 
+          width: newWidth,
+          height: newHeight
         });
       }
     };
 
     window.addEventListener("resize", handleResize);
+    
+    // Trigger initial resize after a small delay
+    setTimeout(handleResize, 100);
+
     return () => {
       window.removeEventListener("resize", handleResize);
       chart.remove();
@@ -137,32 +156,32 @@ export function useTradingChart(symbol: Symbol, interval: Interval) {
     fetchHistoricalCandles();
   }, [symbol, interval, fetchHistoricalCandles]);
 
-// Update live candle
-const updateLiveCandle = useCallback((liveCandle: LiveCandle) => {
-  if (!candleSeriesRef.current) return;
+  // Update live candle
+  const updateLiveCandle = useCallback((liveCandle: LiveCandle) => {
+    if (!candleSeriesRef.current) return;
 
-  const candleTime = Math.floor(liveCandle.openTime / 1000) as UTCTimestamp;
-  
-  // Don't update if this candle is older than the last one we have
-  if (lastCandleRef.current && candleTime < lastCandleRef.current.time) {
-    console.log('Skipping old candle:', candleTime, 'Last:', lastCandleRef.current.time);
-    return;
-  }
+    const candleTime = Math.floor(liveCandle.openTime / 1000) as UTCTimestamp;
+    
+    // Don't update if this candle is older than the last one we have
+    if (lastCandleRef.current && candleTime < lastCandleRef.current.time) {
+      console.log('Skipping old candle:', candleTime, 'Last:', lastCandleRef.current.time);
+      return;
+    }
 
-  const candleData: CandleData = {
-    time: candleTime,
-    open: liveCandle.open,
-    high: liveCandle.high,
-    low: liveCandle.low,
-    close: liveCandle.close,
-  };
+    const candleData: CandleData = {
+      time: candleTime,
+      open: liveCandle.open,
+      high: liveCandle.high,
+      low: liveCandle.low,
+      close: liveCandle.close,
+    };
 
-  // Track the current live candle time
-  liveCandleTimeRef.current = liveCandle.openTime;
+    // Track the current live candle time
+    liveCandleTimeRef.current = liveCandle.openTime;
 
-  candleSeriesRef.current.update(candleData);
-  lastCandleRef.current = candleData;
-}, []);
+    candleSeriesRef.current.update(candleData);
+    lastCandleRef.current = candleData;
+  }, []);
 
   // Add closed candle (when a new candle starts)
   const addClosedCandle = useCallback((closedCandle: LiveCandle) => {

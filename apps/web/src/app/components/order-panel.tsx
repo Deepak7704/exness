@@ -1,7 +1,193 @@
-export default function OrderPanel() {
+"use client"
+import { useState, useEffect } from 'react';
+
+interface OrderPanelProps {
+  onOrderPlaced?: () => void;
+}
+
+export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
+  const [selectedAsset, setSelectedAsset] = useState('BTCUSDT');
+  const [volume, setVolume] = useState('0.01');
+  const [selectedLeverage, setSelectedLeverage] = useState('10x');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [balance, setBalance] = useState<number | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+
+  const pairs = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
+
+  // Fetch user balance on mount
+  useEffect(() => {
+    fetchBalance();
+  }, []);
+
+  const fetchBalance = async () => {
+    setIsLoadingBalance(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsLoadingBalance(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/user/balance', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBalance(data.user.balance);
+      } else {
+        console.error('Failed to fetch balance');
+      }
+    } catch (error) {
+      console.error('Failed to fetch balance:', error);
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setError('');
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setVolume(value);
+    }
+  };
+
+  const incrementVolume = () => {
+    const current = parseFloat(volume) || 0;
+    const step = current < 1 ? 0.01 : 1;
+    const newValue = Math.round((current + step) * 100) / 100;
+    setVolume(newValue.toString());
+  };
+
+  const decrementVolume = () => {
+    const current = parseFloat(volume) || 0;
+    const step = current <= 1 ? 0.01 : 1;
+    const minValue = 0.01;
+    if (current > minValue) {
+      const newValue = Math.max(minValue, Math.round((current - step) * 100) / 100);
+      setVolume(newValue.toString());
+    }
+  };
+
+  const handleOrder = async (type: 'buy' | 'sell') => {
+    setError('');
+    
+    const qty = parseFloat(volume);
+    if (!qty || qty <= 0) {
+      setError('Please enter a valid quantity');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Please login first');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // ✅ Fixed: Changed from /api/orders/open to /api/order/open
+      const response = await fetch('http://localhost:3000/api/orders/open', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          asset: selectedAsset,
+          qty,
+          type,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to place the order');
+      }
+
+      setVolume('0.01');
+      setError('');
+      
+      // Update balance from response
+      if (data.updatedBalance !== undefined) {
+        setBalance(data.updatedBalance);
+      }
+
+      alert(`${type.toUpperCase()} order placed successfully!`);
+      
+      // Trigger refresh in PositionsPanel
+      if (onOrderPlaced) {
+        onOrderPlaced();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to place order');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Calculate estimated cost
+  const estimatedCost = balance ? (parseFloat(volume) || 0) * 50000 : 0; // Rough estimate
+
   return (
-    <div className="w-72 border-l border-gray-800 bg-[#101421] p-4 flex flex-col">
-      <h3 className="text-lg font-semibold mb-4">BTC/USD</h3>
+    <div className="w-full lg:w-72 border-l border-gray-800 bg-[#101421] p-4 flex flex-col min-h-screen lg:min-h-0">
+      {/* Balance Header - NEW */}
+      <div className="mb-4 p-3 bg-gray-900/50 border border-gray-700 rounded-md">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-gray-400">Account Balance</span>
+          <button
+            onClick={fetchBalance}
+            disabled={isLoadingBalance}
+            className="text-xs text-blue-500 hover:text-blue-400 disabled:opacity-50"
+          >
+            {isLoadingBalance ? '⟳' : '↻'}
+          </button>
+        </div>
+        {balance !== null ? (
+          <>
+            <div className="text-2xl font-bold text-white mb-1">
+              ${balance.toFixed(2)}
+            </div>
+            <div className="text-xs text-gray-500">
+              Available for trading
+            </div>
+          </>
+        ) : (
+          <div className="text-lg text-gray-400">Loading...</div>
+        )}
+      </div>
+
+      {/* Asset Selection Buttons */}
+      <div className="mb-4">
+        <div className="grid grid-cols-3 gap-2">
+          {pairs.map((pair) => (
+            <button
+              key={pair}
+              onClick={() => setSelectedAsset(pair)}
+              disabled={isLoading}
+              className={`py-2 px-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
+                selectedAsset === pair
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {pair}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <h3 className="text-lg font-semibold mb-4">{selectedAsset}</h3>
+
+      {/* Market/Limit Toggle */}
       <div className="flex border border-gray-700 rounded-md mb-4">
         <button className="flex-1 bg-blue-600 text-white py-2 rounded-l-md text-sm font-semibold">
           Market
@@ -11,30 +197,58 @@ export default function OrderPanel() {
         </button>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-2 bg-red-500/20 border border-red-500 rounded-md text-red-400 text-xs">
+          {error}
+        </div>
+      )}
+
+      {/* Volume Input */}
       <div className="space-y-4">
         <div>
           <label className="text-xs text-gray-400 mb-1 block">VOLUME</label>
           <div className="flex items-center bg-gray-900 border border-gray-700 rounded-md">
-            <button className="px-3 py-2 text-gray-400 hover:bg-gray-700">-</button>
+            <button
+              onClick={decrementVolume}
+              disabled={isLoading}
+              className="px-3 py-2 text-gray-400 hover:bg-gray-700 active:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              -
+            </button>
             <input
               type="text"
-              defaultValue="0.01"
-              className="w-full bg-transparent text-center font-mono focus:outline-none"
+              value={volume}
+              onChange={handleVolumeChange}
+              disabled={isLoading}
+              className="w-full bg-transparent text-gray-100 text-center font-mono focus:outline-none py-2 disabled:opacity-50"
+              placeholder="0.00"
             />
-            <button className="px-3 py-2 text-gray-400 hover:bg-gray-700">+</button>
+            <button
+              onClick={incrementVolume}
+              disabled={isLoading}
+              className="px-3 py-2 text-gray-400 hover:bg-gray-700 active:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              +
+            </button>
             <span className="text-xs text-gray-500 pr-3">Lots</span>
           </div>
         </div>
 
+        {/* Leverage */}
         <div>
           <label className="text-xs text-gray-400 mb-1 block">LEVERAGE</label>
           <div className="grid grid-cols-4 gap-1">
-            {["1x", "2x", "5x", "10x"].map((l, i) => (
+            {["1x", "2x", "5x", "10x"].map((l) => (
               <button
                 key={l}
-                className={`py-2 text-sm rounded-md ${
-                  l === "10x" ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                }`}
+                onClick={() => setSelectedLeverage(l)}
+                disabled={isLoading}
+                className={`py-2 text-sm rounded-md transition-colors ${
+                  selectedLeverage === l
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {l}
               </button>
@@ -42,39 +256,60 @@ export default function OrderPanel() {
           </div>
         </div>
 
+        {/* Take Profit & Stop Loss */}
         {["TAKE PROFIT", "STOP LOSS"].map((label) => (
           <div key={label}>
             <label className="text-xs text-gray-400 mb-1 block">{label}</label>
             <div className="flex items-center bg-gray-900 border border-gray-700 rounded-md">
               <span className="px-3 text-gray-500 text-sm">Not set</span>
               <div className="flex-1" />
-              <button className="px-3 py-2 text-gray-400 hover:bg-gray-700">{label === 'TAKE PROFIT' ? '+' : '-'}</button>
+              <button className="px-3 py-2 text-gray-400 hover:bg-gray-700">
+                {label === 'TAKE PROFIT' ? '+' : '-'}
+              </button>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Buy/Sell Buttons */}
       <div className="grid grid-cols-2 gap-3 mt-6">
-        <button className="w-full bg-green-600/20 text-green-400 border border-green-600 py-3 rounded-md hover:bg-green-600/30">
-          Buy
+        <button
+          onClick={() => handleOrder('buy')}
+          disabled={isLoading || balance === null || balance <= 0}
+          className="w-full bg-green-600/20 text-green-400 border border-green-600 py-3 rounded-md hover:bg-green-600/30 transition-colors active:bg-green-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'Processing...' : 'Buy'}
         </button>
-        <button className="w-full bg-red-600/20 text-red-400 border border-red-600 py-3 rounded-md hover:bg-red-600/30">
-          Sell
+        <button
+          onClick={() => handleOrder('sell')}
+          disabled={isLoading || balance === null || balance <= 0}
+          className="w-full bg-red-600/20 text-red-400 border border-red-600 py-3 rounded-md hover:bg-red-600/30 transition-colors active:bg-red-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'Processing...' : 'Sell'}
         </button>
       </div>
 
+      {/* Account Details */}
       <div className="mt-auto border-t border-gray-800 pt-4 text-xs space-y-2">
-        <div className="flex justify-between">
-          <span className="text-gray-400">Balance</span>
-          <span className="font-mono">11,839.99 USD</span>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Total Balance</span>
+          <span className="font-mono text-white font-semibold">
+            {balance !== null ? `$${balance.toFixed(2)}` : 'Loading...'}
+          </span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <span className="text-gray-400">Free Margin</span>
-          <span className="font-mono">11,650.30 USD</span>
+          <span className="font-mono text-green-400">
+            {balance !== null ? `$${balance.toFixed(2)}` : 'Loading...'}
+          </span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Used Margin</span>
+          <span className="font-mono text-gray-400">$0.00</span>
+        </div>
+        <div className="flex justify-between items-center">
           <span className="text-gray-400">Margin Level</span>
-          <span className="font-mono text-green-500">--</span>
+          <span className="font-mono text-green-500">∞</span>
         </div>
       </div>
     </div>
