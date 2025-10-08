@@ -3,23 +3,32 @@ import { useState, useEffect } from 'react';
 
 interface OrderPanelProps {
   onOrderPlaced?: () => void;
+  unrealizedPNL?: number;
+  balanceRefreshTrigger?:number;
 }
 
-export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
+export default function OrderPanel({ onOrderPlaced, unrealizedPNL = 0, balanceRefreshTrigger }: OrderPanelProps) {
   const [selectedAsset, setSelectedAsset] = useState('BTCUSDT');
   const [volume, setVolume] = useState('0.01');
   const [selectedLeverage, setSelectedLeverage] = useState('10x');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [balance, setBalance] = useState<number | null>(null);
+  const [realizedBalance, setRealizedBalance] = useState<number | null>(null);
+  const [usedMargin, setUsedMargin] = useState(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
   const pairs = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
 
-  // Fetch user balance on mount
   useEffect(() => {
     fetchBalance();
   }, []);
+
+  useEffect(()=>{
+    if(balanceRefreshTrigger != undefined && balanceRefreshTrigger > 0){
+      fetchBalance();
+      fetchUsedMargin();
+    }
+  },[balanceRefreshTrigger])
 
   const fetchBalance = async () => {
     setIsLoadingBalance(true);
@@ -39,7 +48,7 @@ export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
 
       if (response.ok) {
         const data = await response.json();
-        setBalance(data.user.balance);
+        setRealizedBalance(data.user.balance);
       } else {
         console.error('Failed to fetch balance');
       }
@@ -49,6 +58,40 @@ export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
       setIsLoadingBalance(false);
     }
   };
+
+  // Fetch used margin from open positions
+  const fetchUsedMargin = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:3000/api/orders/open', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const totalMargin = data.openOrders.reduce((sum: number, order: any) => sum + order.margin, 0);
+        setUsedMargin(totalMargin);
+      }
+    } catch (error) {
+      console.error('Failed to fetch used margin:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsedMargin();
+  }, []);
+
+  // Refetch used margin when orders change
+  useEffect(() => {
+    if (onOrderPlaced) {
+      fetchUsedMargin();
+    }
+  }, [unrealizedPNL]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -93,7 +136,6 @@ export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
     setIsLoading(true);
 
     try {
-      // ✅ Fixed: Changed from /api/orders/open to /api/order/open
       const response = await fetch('http://localhost:3000/api/orders/open', {
         method: 'POST',
         headers: {
@@ -116,14 +158,12 @@ export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
       setVolume('0.01');
       setError('');
       
-      // Update balance from response
-      if (data.updatedBalance !== undefined) {
-        setBalance(data.updatedBalance);
-      }
+      // Don't update realized balance - it stays the same
+      // Only update used margin
+      await fetchUsedMargin();
 
       alert(`${type.toUpperCase()} order placed successfully!`);
       
-      // Trigger refresh in PositionsPanel
       if (onOrderPlaced) {
         onOrderPlaced();
       }
@@ -134,30 +174,40 @@ export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
     }
   };
 
-  // Calculate estimated cost
-  const estimatedCost = balance ? (parseFloat(volume) || 0) * 50000 : 0; // Rough estimate
+  // Calculate balances
+  const totalBalance = realizedBalance !== null ? realizedBalance + unrealizedPNL : null;
+  const freeMargin = realizedBalance !== null ? realizedBalance - usedMargin : null;
+  const marginLevel = usedMargin > 0 ? ((realizedBalance || 0) / usedMargin) * 100 : Infinity;
 
   return (
     <div className="w-full lg:w-72 border-l border-gray-800 bg-[#101421] p-4 flex flex-col min-h-screen lg:min-h-0">
-      {/* Balance Header - NEW */}
+      {/* Balance Header */}
       <div className="mb-4 p-3 bg-gray-900/50 border border-gray-700 rounded-md">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs text-gray-400">Account Balance</span>
           <button
-            onClick={fetchBalance}
+            onClick={() => {
+              fetchBalance();
+              fetchUsedMargin();
+            }}
             disabled={isLoadingBalance}
             className="text-xs text-blue-500 hover:text-blue-400 disabled:opacity-50"
           >
             {isLoadingBalance ? '⟳' : '↻'}
           </button>
         </div>
-        {balance !== null ? (
+        {totalBalance !== null ? (
           <>
             <div className="text-2xl font-bold text-white mb-1">
-              ${balance.toFixed(2)}
+              ${totalBalance.toFixed(2)}
             </div>
-            <div className="text-xs text-gray-500">
-              Available for trading
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-gray-500">Balance: ${realizedBalance?.toFixed(2)}</span>
+              {unrealizedPNL !== 0 && (
+                <span className={unrealizedPNL >= 0 ? 'text-green-400' : 'text-red-400'}>
+                  {unrealizedPNL >= 0 ? '+' : ''}${unrealizedPNL.toFixed(2)}
+                </span>
+              )}
             </div>
           </>
         ) : (
@@ -275,14 +325,14 @@ export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
       <div className="grid grid-cols-2 gap-3 mt-6">
         <button
           onClick={() => handleOrder('buy')}
-          disabled={isLoading || balance === null || balance <= 0}
+          disabled={isLoading || freeMargin === null || freeMargin <= 0}
           className="w-full bg-green-600/20 text-green-400 border border-green-600 py-3 rounded-md hover:bg-green-600/30 transition-colors active:bg-green-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Processing...' : 'Buy'}
         </button>
         <button
           onClick={() => handleOrder('sell')}
-          disabled={isLoading || balance === null || balance <= 0}
+          disabled={isLoading || freeMargin === null || freeMargin <= 0}
           className="w-full bg-red-600/20 text-red-400 border border-red-600 py-3 rounded-md hover:bg-red-600/30 transition-colors active:bg-red-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Processing...' : 'Sell'}
@@ -294,22 +344,36 @@ export default function OrderPanel({ onOrderPlaced }: OrderPanelProps) {
         <div className="flex justify-between items-center">
           <span className="text-gray-400">Total Balance</span>
           <span className="font-mono text-white font-semibold">
-            {balance !== null ? `$${balance.toFixed(2)}` : 'Loading...'}
+            {totalBalance !== null ? `$${totalBalance.toFixed(2)}` : 'Loading...'}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Realized Balance</span>
+          <span className="font-mono text-white">
+            {realizedBalance !== null ? `$${realizedBalance.toFixed(2)}` : 'Loading...'}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Unrealized P/L</span>
+          <span className={`font-mono ${unrealizedPNL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {unrealizedPNL >= 0 ? '+' : ''}${unrealizedPNL.toFixed(2)}
           </span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-gray-400">Free Margin</span>
           <span className="font-mono text-green-400">
-            {balance !== null ? `$${balance.toFixed(2)}` : 'Loading...'}
+            {freeMargin !== null ? `$${freeMargin.toFixed(2)}` : 'Loading...'}
           </span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-gray-400">Used Margin</span>
-          <span className="font-mono text-gray-400">$0.00</span>
+          <span className="font-mono text-gray-400">${usedMargin.toFixed(2)}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-gray-400">Margin Level</span>
-          <span className="font-mono text-green-500">∞</span>
+          <span className={`font-mono ${marginLevel > 100 ? 'text-green-500' : marginLevel > 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+            {marginLevel === Infinity ? '∞' : `${marginLevel.toFixed(2)}%`}
+          </span>
         </div>
       </div>
     </div>

@@ -15,14 +15,10 @@ export async function openOrderController(req: AuthRequest, res: Response) {
         });
     }
 
-    // Convert string to OrderType enum
     const orderType: OrderType = type === "sell" ? OrderType.SELL : OrderType.BUY;
     
-    // Retrieve user based on the userid
     const user = await prisma.user.findUnique({
-        where: {
-            id: userId
-        }
+        where: { id: userId }
     });
     
     if (!user) {
@@ -39,33 +35,36 @@ export async function openOrderController(req: AuthRequest, res: Response) {
         });
     }
 
-    // Convert to Decimal for calculations
     const boughtPriceDecimal = new Prisma.Decimal(boughtPrice);
     const qtyDecimal = new Prisma.Decimal(qty);
-    const margin = boughtPriceDecimal.mul(qtyDecimal); // Use Decimal.js methods
+    const margin = boughtPriceDecimal.mul(qtyDecimal);
 
-    // Compare Decimal values
-    if (user.balance.lessThan(margin)) {
+    // CHANGED: Check against FREE MARGIN instead of balance
+    const equity = user.balance; // Balance doesn't include unrealized P&L in this simplified version
+    const freeMargin = equity.minus(user.usedMargin);
+    
+    if (freeMargin.lessThan(margin)) {
         return res.status(400).json({
-            error: "Insufficient Balance"
+            error: "Insufficient Free Margin",
+            required: margin.toNumber(),
+            available: freeMargin.toNumber()
         });
     }
 
-    // Update the user database details
+    // CRITICAL CHANGE: Lock margin in usedMargin, DON'T touch balance
     const [updatedUser, order] = await prisma.$transaction([
         prisma.user.update({
-            where: {
-                id: userId
-            },
+            where: { id: userId },
             data: {
-                balance: { decrement: margin }
+                usedMargin: { increment: margin }  // CHANGED: Lock margin as collateral
+                // REMOVED: balance decrement - balance stays unchanged
             }
         }),
         prisma.openOrder.create({
             data: {
                 userId,
                 asset,
-                type: orderType, // Use enum value
+                type: orderType,
                 boughtPrice: boughtPriceDecimal,
                 qty: qtyDecimal,
                 margin: margin
@@ -81,9 +80,12 @@ export async function openOrderController(req: AuthRequest, res: Response) {
             qty: order.qty.toNumber(),
             margin: order.margin.toNumber()
         },
-        updatedBalance: updatedUser.balance.toNumber()
+        balance: updatedUser.balance.toNumber(),          // UNCHANGED - now stays same
+        usedMargin: updatedUser.usedMargin.toNumber(),    // ADDED - shows locked margin
+        freeMargin: updatedUser.balance.minus(updatedUser.usedMargin).toNumber()  // ADDED
     });
 }
+
 
 export async function closeOrderController(req: AuthRequest, res: Response) {
     const userId = req.user?.id;
@@ -95,11 +97,8 @@ export async function closeOrderController(req: AuthRequest, res: Response) {
         });
     }
 
-    // Fetch the open order
     const order = await prisma.openOrder.findUnique({
-        where: {
-            id: orderId
-        }
+        where: { id: orderId }
     });
     
     if (!order) {
@@ -108,14 +107,12 @@ export async function closeOrderController(req: AuthRequest, res: Response) {
         });
     }
     
-    // Validate order 
     if (order.userId !== userId) {
         return res.status(403).json({
             error: "Unauthorized: Order does not belong to this user"
         });
     }
     
-    // Getting the current price of the asset for closing the position
     const closeType = order.type === OrderType.BUY ? "sell" : "buy";
     console.log(`Requesting closing price for ${order.asset} ${closeType}`);
     const closePrice = await getAssetLivePrice(order.asset, closeType);
@@ -127,40 +124,33 @@ export async function closeOrderController(req: AuthRequest, res: Response) {
         });
     }
     
-    // Convert to Decimal for calculations
     const closePriceDecimal = new Prisma.Decimal(closePrice);
     
-    // Calculating the P&L using Decimal.js methods
+    // Calculate Realized P&L (UNCHANGED - this was already correct)
     let pnl: Prisma.Decimal;
     if (order.type === OrderType.BUY) {
-        // pnl = (closePrice - boughtPrice) * qty
         pnl = closePriceDecimal.minus(order.boughtPrice).mul(order.qty);
     } else {
-        // pnl = (boughtPrice - closePrice) * qty
         pnl = order.boughtPrice.minus(closePriceDecimal).mul(order.qty);
     }
 
-    const finalBalance = order.margin.plus(pnl);
-    
-    // Round to 2 decimal places
-    const finalBalanceRounded = finalBalance.toDecimalPlaces(2);
     const pnlRounded = pnl.toDecimalPlaces(2);
 
-    // Update in the database
+    // CRITICAL CHANGE: Two separate operations instead of one combined operation
     const [updatedUser, closedOrder] = await prisma.$transaction([
         prisma.user.update({
-            where: {
-                id: userId
-            },
+            where: { id: userId },
             data: {
-                balance: { increment: finalBalanceRounded }
+                balance: { increment: pnlRounded },         // CHANGED: Only P&L affects balance
+                usedMargin: { decrement: order.margin }     // ADDED: Release locked margin
+                // REMOVED: increment by (margin + pnl) - this was wrong
             }
         }),
         prisma.closedOrder.create({
             data: {
                 userId: order.userId,
                 asset: order.asset,
-                type: order.type, // Already an enum
+                type: order.type,
                 boughtPrice: order.boughtPrice,
                 closedPrice: closePriceDecimal,
                 qty: order.qty,
@@ -170,13 +160,10 @@ export async function closeOrderController(req: AuthRequest, res: Response) {
             }
         }),
         prisma.openOrder.delete({
-            where: {
-                id: orderId
-            }
+            where: { id: orderId }
         })
     ]);
 
-    // Convert Decimal to numbers for JSON response
     const pnlNumber = pnlRounded.toNumber();
     const marginNumber = order.margin.toNumber();
 
@@ -193,10 +180,13 @@ export async function closeOrderController(req: AuthRequest, res: Response) {
             pnl: pnlNumber,
             pnlPercentage: ((pnlNumber / marginNumber) * 100).toFixed(2) + "%"
         },
-        updatedBalance: updatedUser.balance.toNumber(),
+        balance: updatedUser.balance.toNumber(),           // Now only reflects P&L change
+        usedMargin: updatedUser.usedMargin.toNumber(),     // ADDED - shows released margin
+        freeMargin: updatedUser.balance.minus(updatedUser.usedMargin).toNumber(),  // ADDED
         profit: pnlNumber >= 0
     });
 }
+
 // Add these two new functions to your orderController.ts
 
 export async function getOpenOrdersController(req: AuthRequest, res: Response) {

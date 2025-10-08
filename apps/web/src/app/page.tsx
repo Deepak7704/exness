@@ -9,16 +9,22 @@ import TradingPrices from "./components/trading-prices";
 
 export default function Home() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [balanceRefreshTrigger, setBalanceRefreshTrigger] = useState(0);
+  const [unrealizedPNL, setUnrealizedPNL] = useState(0);
+  const [balanceRefreshTrigger,setBalanceRefreshTrigger] = useState(0);
 
   const handleOrderPlaced = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleOrderClosed = () => {
-    setRefreshTrigger(prev => prev + 1); // Refresh positions list
-    setBalanceRefreshTrigger(prev => prev + 1); // Trigger balance refresh in OrderPanel
+  const handleBalanceChange = (pnl: number) => {
+    setUnrealizedPNL(pnl);
   };
+
+  const handlePositionClosed = () =>{
+    setBalanceRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger(prev => prev+1)
+  }
+
   return (
     <main className="flex h-screen w-screen overflow-hidden bg-[#0A0E1A]">
       {/* Left Panel - Instruments */}
@@ -35,13 +41,21 @@ export default function Home() {
         
         {/* Positions Panel - Remaining Space */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <PositionsPanel refreshTrigger={refreshTrigger} />
+          <PositionsPanel 
+            refreshTrigger={refreshTrigger}
+            onBalanceChange={handleBalanceChange}
+            onPositionClosed ={handlePositionClosed}
+          />
         </div>
       </section>
 
       {/* Right Panel - Order Entry */}
       <aside className="w-[320px] h-screen flex-shrink-0 border-l border-gray-800 overflow-y-auto">
-        <OrderPanel onOrderPlaced={handleOrderPlaced} />
+        <OrderPanel 
+          onOrderPlaced={handleOrderPlaced}
+          unrealizedPNL={unrealizedPNL}
+          balanceRefreshTrigger = {balanceRefreshTrigger}
+        />
       </aside>
     </main>
   );

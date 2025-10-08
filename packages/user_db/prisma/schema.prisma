@@ -17,6 +17,7 @@ model User {
   email        String        @unique
   password     String
   balance      Decimal       @default(5000) @db.Decimal(15, 2)
+  usedMargin   Decimal  @default(0)
   openOrders   OpenOrder[]
   closedOrders ClosedOrder[]
 }
