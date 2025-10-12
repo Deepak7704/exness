@@ -338,44 +338,6 @@ export default function OrderPanel({ onOrderPlaced, unrealizedPNL = 0, balanceRe
           {isLoading ? 'Processing...' : 'Sell'}
         </button>
       </div>
-
-      {/* Account Details */}
-      <div className="mt-auto border-t border-gray-800 pt-4 text-xs space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-400">Total Balance</span>
-          <span className="font-mono text-white font-semibold">
-            {totalBalance !== null ? `$${totalBalance.toFixed(2)}` : 'Loading...'}
-          </span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-400">Realized Balance</span>
-          <span className="font-mono text-white">
-            {realizedBalance !== null ? `$${realizedBalance.toFixed(2)}` : 'Loading...'}
-          </span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-400">Unrealized P/L</span>
-          <span className={`font-mono ${unrealizedPNL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {unrealizedPNL >= 0 ? '+' : ''}${unrealizedPNL.toFixed(2)}
-          </span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-400">Free Margin</span>
-          <span className="font-mono text-green-400">
-            {freeMargin !== null ? `$${freeMargin.toFixed(2)}` : 'Loading...'}
-          </span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-400">Used Margin</span>
-          <span className="font-mono text-gray-400">${usedMargin.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-400">Margin Level</span>
-          <span className={`font-mono ${marginLevel > 100 ? 'text-green-500' : marginLevel > 50 ? 'text-yellow-500' : 'text-red-500'}`}>
-            {marginLevel === Infinity ? '∞' : `${marginLevel.toFixed(2)}%`}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

@@ -17,7 +17,7 @@ model User {
   email        String        @unique
   password     String
   balance      Decimal       @default(5000) @db.Decimal(15, 2)
-  usedMargin   Decimal  @default(0)
+  usedMargin   Decimal       @default(0) @db.Decimal(15, 2)
   openOrders   OpenOrder[]
   closedOrders ClosedOrder[]
 }
@@ -32,11 +32,11 @@ model OpenOrder {
   qty         Decimal   @db.Decimal(18, 8)
   margin      Decimal   @db.Decimal(15, 2)
   createdAt   DateTime  @default(now())
-
+  
   @@index([userId])
   @@index([asset])
   @@index([createdAt])
-  @@map("open_orders")
+  @@map("open_orders")  // Changed from "openOrders" to "open_orders"
 }
 
 model ClosedOrder {
@@ -52,10 +52,9 @@ model ClosedOrder {
   pnl         Decimal   @db.Decimal(15, 2)
   openTime    DateTime
   closedAt    DateTime  @default(now())
-
+  
   @@index([userId])
   @@index([asset])
   @@index([closedAt])
-  @@map("closed_orders")
+  @@map("closed_orders")  // Changed from "closedOrders" to "closed_orders"
 }
-

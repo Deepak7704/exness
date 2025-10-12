@@ -6,11 +6,12 @@ import InstrumentPanel from "./components/instrument-panel";
 import OrderPanel from "./components/order-panel";
 import { PositionsPanel } from "./components/positions-panel";
 import TradingPrices from "./components/trading-prices";
+import { TradingAssistantModal } from "./components/TradingAssistant";
 
 export default function Home() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [unrealizedPNL, setUnrealizedPNL] = useState(0);
-  const [balanceRefreshTrigger,setBalanceRefreshTrigger] = useState(0);
+  const [balanceRefreshTrigger, setBalanceRefreshTrigger] = useState(0);
 
   const handleOrderPlaced = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -20,43 +21,51 @@ export default function Home() {
     setUnrealizedPNL(pnl);
   };
 
-  const handlePositionClosed = () =>{
+  const handlePositionClosed = () => {
     setBalanceRefreshTrigger(prev => prev + 1);
-    setRefreshTrigger(prev => prev+1)
+    setRefreshTrigger(prev => prev + 1)
   }
 
+  // Get userId from auth - adjust this based on your auth setup
+  const userId = "884e0c23-285d-4dbd-b0d9-ee0e17f020df";
+
   return (
-    <main className="flex h-screen w-screen overflow-hidden bg-[#0A0E1A]">
-      {/* Left Panel - Instruments */}
-      <aside className="w-[280px] h-screen flex-shrink-0 border-r border-gray-800 overflow-y-auto">
-        <TradingPrices />
-      </aside>
+    <>
+      <main className="flex h-screen w-screen overflow-hidden bg-[#0A0E1A]">
+        {/* Left Panel - Instruments */}
+        <aside className="w-[280px] h-screen flex-shrink-0 border-r border-gray-800 overflow-y-auto">
+          <TradingPrices />
+        </aside>
 
-      {/* Center Panel - Trading Chart + Positions */}
-      <section className="flex-1 h-screen flex flex-col min-w-0 overflow-hidden">
-        {/* Trading Chart - Fixed Height */}
-        <div className="h-[60vh] min-h-0 overflow-hidden border-b border-gray-800">
-          <TradingChart />
-        </div>
-        
-        {/* Positions Panel - Remaining Space */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <PositionsPanel 
-            refreshTrigger={refreshTrigger}
-            onBalanceChange={handleBalanceChange}
-            onPositionClosed ={handlePositionClosed}
+        {/* Center Panel - Trading Chart + Positions */}
+        <section className="flex-1 h-screen flex flex-col min-w-0 overflow-hidden">
+          {/* Trading Chart - Fixed Height */}
+          <div className="h-[60vh] min-h-0 overflow-hidden border-b border-gray-800">
+            <TradingChart />
+          </div>
+          
+          {/* Positions Panel - Remaining Space */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <PositionsPanel 
+              refreshTrigger={refreshTrigger}
+              onBalanceChange={handleBalanceChange}
+              onPositionClosed={handlePositionClosed}
+            />
+          </div>
+        </section>
+
+        {/* Right Panel - Order Entry */}
+        <aside className="w-[320px] h-screen flex-shrink-0 border-l border-gray-800 overflow-y-auto">
+          <OrderPanel 
+            onOrderPlaced={handleOrderPlaced}
+            unrealizedPNL={unrealizedPNL}
+            balanceRefreshTrigger={balanceRefreshTrigger}
           />
-        </div>
-      </section>
+        </aside>
+      </main>
 
-      {/* Right Panel - Order Entry */}
-      <aside className="w-[320px] h-screen flex-shrink-0 border-l border-gray-800 overflow-y-auto">
-        <OrderPanel 
-          onOrderPlaced={handleOrderPlaced}
-          unrealizedPNL={unrealizedPNL}
-          balanceRefreshTrigger = {balanceRefreshTrigger}
-        />
-      </aside>
-    </main>
+      {/* AI Assistant Modal */}
+      <TradingAssistantModal/>
+    </>
   );
 }
