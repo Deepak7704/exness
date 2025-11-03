@@ -222,15 +222,9 @@ Critical for determining if user should add more positions.`,
       let riskLevel: string;
       let recommendation: string;
 
-      if (symbolExposurePercentage >= 20) {
+      if (symbolExposurePercentage >= 10) {
         riskLevel = 'HIGH RISK';
         recommendation = 'AVOID adding more positions. Already at maximum recommended exposure (20%).';
-      } else if (symbolExposurePercentage >= 15) {
-        riskLevel = 'MODERATE RISK';
-        recommendation = 'Consider carefully. Near maximum exposure limit. Only add if strong conviction.';
-      } else if (symbolExposurePercentage >= 10) {
-        riskLevel = 'ACCEPTABLE RISK';
-        recommendation = 'Can add moderate position size while maintaining risk management.';
       } else {
         riskLevel = 'LOW RISK';
         recommendation = 'Sufficient room for new positions within risk parameters.';
@@ -247,6 +241,7 @@ Critical for determining if user should add more positions.`,
 Total Account Balance: $${totalBalance.toFixed(2)}
 Used Margin (All Positions): $${usedMargin.toFixed(2)} (${exposurePercentage.toFixed(2)}%)
 Available Balance: $${availableBalance.toFixed(2)}
+
 
 ${symbol} Exposure:
 - Margin Used: $${symbolMargin.toFixed(2)}
