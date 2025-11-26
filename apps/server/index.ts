@@ -4,6 +4,7 @@ import orderRoutes from "./routes/orderRoutes";
 import candleRoutes from "./routes/candleRoutes";
 import cors from "cors";
 import agentRoutes from './routes/agentRoutes';
+import rateLimitMiddleware from './middleware/rateLimitMiddleware';
 import "./socketServer";
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(cors({
 
 
 app.use(express.json());
+app.use(rateLimitMiddleware);
 app.use("/api/user",router);
 app.use("/api/orders",orderRoutes);
 app.use("/api/candles",candleRoutes);
