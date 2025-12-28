@@ -57,19 +57,39 @@ export function useTradingChart(symbol: Symbol, interval: Interval) {
         horzLines: { color: "#1E293B" },
       },
       crosshair: { mode: 1 },
-      rightPriceScale: { 
+      rightPriceScale: {
         borderColor: "#2B3B5F",
         visible: true,
+        autoScale: true, // Enable automatic price scaling
+        scaleMargins: {
+          top: 0.1,    // 10% margin at top
+          bottom: 0.1, // 10% margin at bottom
+        },
       },
-      timeScale: { 
-        borderColor: "#2B3B5F", 
-        timeVisible: true, 
+      timeScale: {
+        borderColor: "#2B3B5F",
+        timeVisible: true,
         secondsVisible: false,
         visible: true,
         borderVisible: true,
         rightOffset: 10,
         barSpacing: 12,
         minBarSpacing: 6,
+        lockVisibleTimeRangeOnResize: true, // Prevent zoom reset on resize
+      },
+      handleScale: {
+        axisPressedMouseMove: {
+          time: true,  // Enable time scale dragging
+          price: true, // Enable price scale dragging
+        },
+        mouseWheel: true,  // Enable mouse wheel zoom
+        pinch: true,       // Enable pinch zoom
+      },
+      handleScroll: {
+        mouseWheel: true,  // Enable mouse wheel scroll
+        pressedMouseMove: true, // Enable drag to scroll
+        horzTouchDrag: true,    // Enable horizontal touch drag
+        vertTouchDrag: true,    // Enable vertical touch drag
       },
     });
 
@@ -80,6 +100,7 @@ export function useTradingChart(symbol: Symbol, interval: Interval) {
       borderDownColor: "#EF4444",
       wickUpColor: "#22C55E",
       wickDownColor: "#EF4444",
+      priceScaleId: "right", // Use right price scale
     });
 
     chartRef.current = chart;

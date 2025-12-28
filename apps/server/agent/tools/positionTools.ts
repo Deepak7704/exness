@@ -1,7 +1,7 @@
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { prisma } from '@repo/user_db';
-import { publisher as redis } from '@repo/redis';
+
 
 const getUserPositionsSchema = z.object({
   userId: z.string().describe('User ID from authentication (UUID string)'),

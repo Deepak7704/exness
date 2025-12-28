@@ -295,18 +295,16 @@ export function PositionsPanel({ refreshTrigger, onBalanceChange, onPositionClos
               <span className="text-gray-400">No open positions</span>
             </div>
           ) : (
-            <table className="w-full text-left text-xs">
-              <thead className="text-gray-400 bg-gray-900/50">
+            <table className="w-full text-sm">
+              <thead className="text-gray-400">
                 <tr className="border-b border-gray-800">
-                  <th className="p-3 font-normal">ASSET</th>
-                  <th className="p-3 font-normal">TYPE</th>
-                  <th className="p-3 font-normal">VOLUME</th>
-                  <th className="p-3 font-normal">OPEN PRICE</th>
-                  <th className="p-3 font-normal">CURRENT PRICE</th> {/* ADD THIS COLUMN */}
-                  <th className="p-3 font-normal">P/L (USD)</th> {/* ADD THIS COLUMN */}
-                  <th className="p-3 font-normal">MARGIN</th>
-                  <th className="p-3 font-normal">TIME</th>
-                  <th className="p-3 font-normal">ACTION</th>
+                  <th className="text-left py-2">Symbol</th>
+                  <th className="text-left py-2">Type</th>
+                  <th className="text-left py-2">Size</th>
+                  <th className="text-left py-2">Entry</th>
+                  <th className="text-left py-2">Current</th>
+                  <th className="text-left py-2">P&L</th>
+                  <th className="text-left py-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -316,34 +314,23 @@ export function PositionsPanel({ refreshTrigger, onBalanceChange, onPositionClos
                   
                   return (
                     <tr key={order.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                      <td className="p-3 font-semibold text-gray-100">{order.asset}</td>
-                      <td className="p-3">
+                      <td className="py-2">{order.asset}</td>
+                      <td className="py-2">
                         <span className={order.type === 'BUY' ? 'text-green-500' : 'text-red-500'}>
                           {order.type}
                         </span>
                       </td>
-                      <td className="p-3 font-mono text-gray-100">{order.qty}</td>
-                      <td className="p-3 font-mono text-gray-100">${order.boughtPrice.toFixed(2)}</td>
-                      {/* ADD THIS CELL: Current Price */}
-                      <td className="p-3 font-mono text-white font-semibold">
-                        ${currentPrice.toFixed(2)}
+                      <td className="py-2">{order.qty}</td>
+                      <td className="py-2">${order.boughtPrice.toFixed(2)}</td>
+                      <td className="py-2">${currentPrice.toFixed(2)}</td>
+                      <td className={`py-2 ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
+                        ${pnl.toFixed(2)}
                       </td>
-                      {/* ADD THIS CELL: P/L */}
-                      <td className="p-3 font-mono">
-                        <span className={isProfit ? 'text-green-400' : 'text-red-400'}>
-                          {isProfit ? '+' : ''}${pnl.toFixed(2)}
-                        </span>
-                        <span className="text-gray-400 ml-1">
-                          ({isProfit ? '+' : ''}{pnlPercent.toFixed(2)}%)
-                        </span>
-                      </td>
-                      <td className="p-3 font-mono text-gray-100">${order.margin.toFixed(2)}</td>
-                      <td className="p-3 font-mono text-gray-100">{formatTime(order.createdAt)}</td>
-                      <td className="p-3">
+                      <td className="py-2">
                         <button
                           onClick={() => handleCloseOrder(order.id)}
                           disabled={closingOrderId === order.id}
-                          className="px-3 py-1 bg-red-600/20 text-red-400 border border-red-600 rounded hover:bg-red-600/30 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {closingOrderId === order.id ? 'Closing...' : 'Close'}
                         </button>
