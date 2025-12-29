@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 
 export const agentConfig = {
-  modelName: 'gemini-2.0-flash-exp',
+  modelName: 'gemini-2.5-flash',
   temperature: 0.3,
   maxOutputTokens: 2048,
   maxIterations: 5,
