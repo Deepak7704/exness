@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '../context/AuthContext';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -48,11 +50,11 @@ export default function SignupPage() {
         throw new Error(data.error || 'Signup failed');
       }
 
-      // Save token to localStorage
-      localStorage.setItem('token', data.token);
+      // Use auth context to login
+      login(data.token);
 
       // Redirect to trading dashboard
-      router.push('/');
+      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
