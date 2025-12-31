@@ -99,19 +99,8 @@ const ArchitectureSection: React.FC = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: "-50px" }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
-                            className={`p-8 rounded-2xl border transition-all duration-300 hover:border-white/20 ${index === 3
-                                    ? 'bg-accent/10 border-accent/30'
-                                    : 'bg-white/[0.03] border-white/[0.08]'
-                                }`}
+                            className="p-8 rounded-2xl border transition-all duration-300 hover:border-white/20 bg-white/[0.03] border-white/[0.08]"
                         >
-                            {/* AI badge for LangChain */}
-                            {index === 3 && (
-                                <div className="inline-flex items-center gap-1.5 px-2 py-1 mb-4 text-xs font-medium text-white bg-accent rounded-full">
-                                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                                    AI-Powered
-                                </div>
-                            )}
-
                             <div className="w-12 h-12 mb-5 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70">
                                 {feature.icon}
                             </div>

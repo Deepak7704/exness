@@ -97,23 +97,14 @@ const HeroSection: React.FC = () => {
             </div>
 
             <div className="relative z-10 max-w-5xl mx-auto text-center">
-                {/* Badge */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm"
-                >
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                    <span className="text-sm text-white/80">Live Trading Platform</span>
-                </motion.div>
-
                 {/* Main Headline - Playfair Display Bold 700 Italic with reveal animation */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight mb-6 text-white font-[family-name:var(--font-playfair)]">
-                    <AnimatedText text="Every trade backed by unbreakable infrastructure." />
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight mb-8 text-white font-[family-name:var(--font-playfair)]">
+                    <span className="block">
+                        <AnimatedText text="Every trade backed by" />
+                    </span>
+                    <span className="block mt-2">
+                        <AnimatedText text="unbreakable infrastructure." />
+                    </span>
                 </h1>
 
                 {/* Subheadline */}
@@ -155,48 +146,7 @@ const HeroSection: React.FC = () => {
                         View Architecture
                     </motion.a>
                 </motion.div>
-
-                {/* Tech Stack Indicators */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 1, delay: 2.2 }}
-                    className="mt-16 flex flex-wrap items-center justify-center gap-6 text-white/50 text-sm"
-                >
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                        <span className="font-mono">Redis Pub/Sub</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                        <span className="font-mono">WebSockets</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                        <span className="font-mono">Workers</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                        <span className="font-mono">LangChain AI</span>
-                    </div>
-                </motion.div>
             </div>
-
-            {/* Scroll indicator */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 2.5 }}
-                className="absolute bottom-8 left-1/2 -translate-x-1/2"
-            >
-                <motion.div
-                    animate={{ y: [0, 10, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="w-6 h-10 rounded-full border-2 border-white/20 flex justify-center pt-2"
-                >
-                    <motion.div
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="w-1 h-2 bg-white/60 rounded-full"
-                    />
-                </motion.div>
-            </motion.div>
         </section>
     );
 };

@@ -134,21 +134,10 @@ const Footer: React.FC = () => {
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: 0.4 }}
-                    className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4"
+                    className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-center gap-4"
                 >
                     <p className="text-white/40 text-sm">
                         © {currentYear} TradePro. All rights reserved.
-                    </p>
-                    <p className="text-white/40 text-sm flex items-center gap-2">
-                        Made with
-                        <motion.span
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 1, repeat: Infinity }}
-                            className="text-red-400"
-                        >
-                            ♥
-                        </motion.span>
-                        for traders worldwide
                     </p>
                 </motion.div>
             </div>
