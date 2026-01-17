@@ -1,6 +1,6 @@
 # Exness Trading Platform
 
-![Exness Trading Platform](apps/web/public/Exness Updated Architecture & Workflow.png)
+![Exness Trading Platform](apps/web/public/Architecture.png)
 
 A high-performance, real-time cryptocurrency trading platform built with modern web technologies. This platform features live price streaming, multiple timeframe candlestick charts, AI-powered trading analysis, and support for both simple and leveraged trading positions.
 
